@@ -28,6 +28,19 @@ int countCorrectPositions(const string& guess, const string& target) {
     return correctPosCount;
 }
 
+// Function to validate the number input (4 digits, no repeating digits)
+bool isValidNumber(const string& number) {
+    if (number.length() != 4) return false;
+    set<char> digits;
+    for (char ch : number) {
+        if (!isdigit(ch) || digits.find(ch) != digits.end()) {
+            return false;
+        }
+        digits.insert(ch);
+    }
+    return true;
+}
+
 int main() {
     // Initialize Raylib window
     InitWindow(800, 600, "NumBrainer");
@@ -39,6 +52,7 @@ int main() {
     string feedbackMessage = "";
     int turn = 1;
     int correctDigits = 0, correctPositions = 0;
+    //int maxTurns = 10;  // You can change this for different game lengths
     bool gameOver = false;
     bool player1Turn = true;
     bool settingUp = true;
@@ -56,7 +70,7 @@ int main() {
             }
 
             // After 4-digit entry, validate and store as either Player's target or guess
-            if (IsKeyPressed(KEY_ENTER) && guess.length() == 4) {
+            if (IsKeyPressed(KEY_ENTER) && guess.length() == 4 && isValidNumber(guess)) {
                 if (settingUp) {
                     // Set up phase for target numbers
                     if (player1Turn) {
@@ -90,6 +104,7 @@ int main() {
                         turn++;
                     }
 
+
                     guess.clear();
                 }
             }
@@ -116,6 +131,23 @@ int main() {
         // Display player input and feedback message
         DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
         DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+
+        // Instructions for resetting the game
+        if (gameOver) {
+            DrawText("Press 'R' to reset the game.", 100, 400, 20, GRAY);
+        }
+
+        // Reset game state
+        if (IsKeyPressed(KEY_R) && gameOver) {
+            player1Number.clear();
+            player2Number.clear();
+            guess.clear();
+            feedbackMessage = "Player 1, set your 4-digit number.";
+            player1Turn = true;
+            settingUp = true;
+            gameOver = false;
+            turn = 1;
+        }
 
         EndDrawing();
     }
