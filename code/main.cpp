@@ -129,7 +129,13 @@ int main() {
         }
 
         // Display player input and feedback message
-        DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
+        if (settingUp) {
+            string maskedGuess(guess.length(), '*');
+            DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
+        } else {
+            DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
+        }
+
         DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
 
         // Instructions for resetting the game
