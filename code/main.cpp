@@ -1,7 +1,6 @@
 #include "raylib.h"
 #include <string>
 #include <set>
-#include <cstdlib>
 #include <ctime>
 
 using namespace std;
@@ -52,7 +51,7 @@ int main() {
     string feedbackMessage = "";
     int turn = 1;
     int correctDigits = 0, correctPositions = 0;
-    //int maxTurns = 10;  // You can change this for different game lengths
+    //int maxTurns = 2;  // You can change this for different game lengths
     bool gameOver = false;
     bool player1Turn = true;
     bool settingUp = true;
