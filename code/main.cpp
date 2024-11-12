@@ -50,16 +50,33 @@ int main() {
     string player1Number = "", player2Number = "";
     string guess = "";
     string feedbackMessage = "";
-    int turn = 1;
+    string turnLimitInput = "";  // Input for number of turns
+    int turnLimit = 0;  // Number of turns for the round
+    int player1Turns = 0, player2Turns = 0;
     int correctDigits = 0, correctPositions = 0;
-    //int maxTurns = 10;  // You can change this for different game lengths
     bool gameOver = false;
     bool player1Turn = true;
     bool settingUp = true;
+    bool settingTurnLimit = true;  // New variable to control turn limit setting
 
     while (!WindowShouldClose()) {
-        // Capture input for 4-digit numbers or guesses
-        if (settingUp || !gameOver) {
+        // Modification for setting turn limit begins here
+        // Capture input for turn limit, 4-digit numbers, or guesses
+        if (settingTurnLimit && !gameOver) {
+            int key = GetCharPressed();
+            if (key >= '0' && key <= '9' && turnLimitInput.length() < 2) {
+                turnLimitInput += (char)key;
+            }
+            if (IsKeyPressed(KEY_BACKSPACE) && !turnLimitInput.empty()) {
+                turnLimitInput.pop_back();
+            }
+            if (IsKeyPressed(KEY_ENTER) && !turnLimitInput.empty()) {
+                turnLimit = stoi(turnLimitInput);
+                settingTurnLimit = false;
+                feedbackMessage = "Player 1, set your 4-digit number.";
+            }
+        }
+        else if ((settingUp || !gameOver) && !settingTurnLimit) {
             int key = GetCharPressed();
             if (key >= '0' && key <= '9' && guess.length() < 4) {
                 guess += (char)key;
@@ -100,10 +117,25 @@ int main() {
                         feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
                         feedbackMessage += ": " + to_string(correctDigits) + " correct digits, " +
                             to_string(correctPositions) + " in position.";
-                        player1Turn = !player1Turn;
-                        turn++;
-                    }
 
+                        if (player1Turn) {
+                            player1Turns++;
+                        }
+                        else {
+                            player2Turns++;
+                        }
+
+                        // Switch turns only if both players haven't exceeded their turn limits
+                        if (player1Turns < turnLimit || player2Turns < turnLimit) {
+                            player1Turn = !player1Turn;
+                        }
+
+                        // Check if both players have reached the turn limit
+                        if (player1Turns >= turnLimit && player2Turns >= turnLimit) {
+                            feedbackMessage = "Turn limit reached! It's a draw.";
+                            gameOver = true;
+                        }
+                    }
 
                     guess.clear();
                 }
@@ -116,31 +148,48 @@ int main() {
 
         // Title and instructions
         DrawText("NumBrainer", 250, 50, 40, DARKBLUE);
-        DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
 
-        if (settingUp) {
-            DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
+        //Setting the amount of turns per game
+        if (settingTurnLimit) 
+        {
+            DrawText("Enter the number of turns for this round:", 100, 100, 20, DARKGRAY);
+            DrawText(turnLimitInput.c_str(), 400, 140, 25, DARKBLUE);
         }
-        else if (!gameOver) {
-            DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
-        }
-        else {
-            DrawText("Game Over!", 100, 140, 20, DARKPURPLE);
-        }
+        else 
+        {
+            DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
 
-        // Display player input and feedback message
-        if (settingUp) {
-            string maskedGuess(guess.length(), '*');
-            DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
-        } else {
-            DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
-        }
+            if (settingUp) 
+            {
+                DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
+            }
+            else if (!gameOver) 
+            {
+                DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
+            }
+            else 
+            {
+                DrawText("Game Over!", 100, 140, 20, DARKPURPLE);   
+            }
 
-        DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+            // Display player input and feedback message
+            if (settingUp) 
+            {
+                string maskedGuess(guess.length(), '*');
+                DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);  
+            }
+            else 
+            {
+                DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
+            }
+
+            DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+        }
 
         // Instructions for resetting the game
-        if (gameOver) {
-            DrawText("Press 'R' to reset the game.", 100, 400, 20, GRAY);
+        if (gameOver) 
+        {
+            DrawText("Press 'R' to reset the game.", 100, 400, 20, GRAY);   
         }
 
         // Reset game state
@@ -148,11 +197,14 @@ int main() {
             player1Number.clear();
             player2Number.clear();
             guess.clear();
-            feedbackMessage = "Player 1, set your 4-digit number.";
+            feedbackMessage = "Enter the number of turns for this game.";
             player1Turn = true;
             settingUp = true;
+            settingTurnLimit = true;
             gameOver = false;
-            turn = 1;
+            player1Turns = 0;
+            player2Turns = 0;
+            turnLimitInput.clear();
         }
 
         EndDrawing();
