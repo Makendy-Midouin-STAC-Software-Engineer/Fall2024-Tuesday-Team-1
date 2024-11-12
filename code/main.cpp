@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <string>
 #include <set>
+#include <cstdlib>
 #include <ctime>
 
 using namespace std;
@@ -32,7 +33,7 @@ bool isValidNumber(const string& number) {
     if (number.length() != 4) return false;
     set<char> digits;
     for (char ch : number) {
-        if (!isdigit(ch) || digits.find(ch) != digits.end()) {
+        if (!isdigit(ch) || digits.find(ch) != end(digits)) {
             return false;
         }
         digits.insert(ch);
@@ -49,37 +50,54 @@ int main() {
     string player1Number = "", player2Number = "";
     string guess = "";
     string feedbackMessage = "";
-    int turn = 1;
+    string turnLimitInput = "";  // Input for number of turns
+    string timeLimitInput = "";  // Input for time limit per turn
+    int turnLimit = 0;           // Number of turns for the round
+    int timeLimitPerTurn = 0;    // Time limit in seconds per turn
+    int player1Turns = 0, player2Turns = 0;
     int correctDigits = 0, correctPositions = 0;
-    //int maxTurns = 2;  // You can change this for different game lengths
     bool gameOver = false;
     bool player1Turn = true;
     bool settingUp = true;
+    bool settingTurnLimit = true;  // Variable to control turn limit setting
+    bool settingTimeLimit = false; // Variable to control time limit setting
 
-    // Timer-related variables
-    float turnTimeLimit = 0;   // Stores the number of seconds per turn, set by players
-    float turnStartTime = 0;   // Records the start time of each turn
-    bool timerSettingPhase = true;  // Indicates if we're in the phase to set the turn timer
+    // Time limit feature variables
+    int remainingTime = 0;  // Time left for the current player's turn
+    double startTime = 0;   // To track elapsed time per turn
 
     while (!WindowShouldClose()) {
-
-        // Timer-setting phase
-        if (timerSettingPhase) {
+        // Capture input for turn limit or game setup
+        if (settingTurnLimit && !gameOver) {
             int key = GetCharPressed();
-            if (key >= '0' && key <= '9') {
-                turnTimeLimit = turnTimeLimit * 10 + (key - '0'); // accumulate input as integer
+            if (key >= '0' && key <= '9' && turnLimitInput.length() < 2) {
+                turnLimitInput += (char)key;
             }
-            if (IsKeyPressed(KEY_ENTER) && turnTimeLimit > 0) {
-                timerSettingPhase = false;  // Move to setup phase after setting timer
-                feedbackMessage = "Player 1, set your 4-digit number.";
+            if (IsKeyPressed(KEY_BACKSPACE) && !turnLimitInput.empty()) {
+                turnLimitInput.pop_back();
             }
-            if (IsKeyPressed(KEY_BACKSPACE)) {
-                turnTimeLimit = turnTimeLimit / 10; // Remove last digit
+            if (IsKeyPressed(KEY_ENTER) && !turnLimitInput.empty()) {
+                turnLimit = stoi(turnLimitInput);
+                settingTurnLimit = false;
+                settingTimeLimit = true;  // Move to time limit setting
+                feedbackMessage = "Enter time limit per turn (seconds):";
             }
         }
-
-        // Capture input for 4-digit numbers or guesses
-        if ((settingUp || !gameOver) && !timerSettingPhase) {
+        else if (settingTimeLimit && !gameOver) {
+            int key = GetCharPressed();
+            if (key >= '0' && key <= '9' && timeLimitInput.length() < 2) {
+                timeLimitInput += (char)key;
+            }
+            if (IsKeyPressed(KEY_BACKSPACE) && !timeLimitInput.empty()) {
+                timeLimitInput.pop_back();
+            }
+            if (IsKeyPressed(KEY_ENTER) && !timeLimitInput.empty()) {
+                timeLimitPerTurn = stoi(timeLimitInput);
+                settingTimeLimit = false;
+                feedbackMessage = "Player 1, set your 4-digit number.";
+            }
+        }
+        else if ((settingUp || !gameOver) && !settingTurnLimit && !settingTimeLimit) {
             int key = GetCharPressed();
             if (key >= '0' && key <= '9' && guess.length() < 4) {
                 guess += (char)key;
@@ -103,7 +121,8 @@ int main() {
                         settingUp = false;
                         player1Turn = true;
                         feedbackMessage = "Game starts! Player 1's turn to guess.";
-                        turnStartTime = GetTime();  // Start the turn timer
+                        remainingTime = timeLimitPerTurn;  // Set initial turn time
+                        startTime = GetTime();             // Start timer only after setup
                     }
                     guess.clear();
                 }
@@ -121,25 +140,42 @@ int main() {
                         feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
                         feedbackMessage += ": " + to_string(correctDigits) + " correct digits, " +
                             to_string(correctPositions) + " in position.";
-                        player1Turn = !player1Turn;
-                        turn++;
-                        turnStartTime = GetTime();  // Reset timer at the start of each new turn
+
+                        if (player1Turn) {
+                            player1Turns++;
+                        }
+                        else {
+                            player2Turns++;
+                        }
+
+                        // Switch turns only if both players haven't exceeded their turn limits
+                        if (player1Turns < turnLimit || player2Turns < turnLimit) {
+                            player1Turn = !player1Turn;
+                            startTime = GetTime();  // Reset timer on turn switch
+                        }
+
+                        // Check if both players have reached the turn limit
+                        if (player1Turns >= turnLimit && player2Turns >= turnLimit) {
+                            feedbackMessage = "Turn limit reached! It's a draw.";
+                            gameOver = true;
+                        }
                     }
 
                     guess.clear();
                 }
             }
-        }
 
-        // Timer countdown logic to automatically start the next turn on timeout
-        if (!settingUp && !gameOver && !timerSettingPhase) {
-            float elapsedTime = GetTime() - turnStartTime;
-            if (elapsedTime > turnTimeLimit) {
-                // Player ran out of time; switch turns automatically
-                feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + string(" ran out of time!");
-                player1Turn = !player1Turn;
-                turnStartTime = GetTime();  // Reset timer for the new turn
-                turn++;
+            // Countdown timer for each turn
+            if (!gameOver && !settingTurnLimit && !settingTimeLimit && !settingUp) {
+                remainingTime = timeLimitPerTurn - (GetTime() - startTime);  // Update remaining time
+                if (remainingTime <= 0) {
+                    // Switch turns automatically if time runs out
+                    feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + string(" ran out of time!");
+                    player1Turn = !player1Turn;
+                    startTime = GetTime();  // Reset timer for next player
+                    remainingTime = timeLimitPerTurn;
+                    if (player1Turn) player1Turns++; else player2Turns++;
+                }
             }
         }
 
@@ -149,36 +185,41 @@ int main() {
 
         // Title and instructions
         DrawText("NumBrainer", 250, 50, 40, DARKBLUE);
-        DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
 
-        if (timerSettingPhase) { // UI for timer setting phase
-            DrawText("Set seconds per turn:", 100, 140, 20, DARKGRAY);
-            DrawText(to_string((int)turnTimeLimit).c_str(), 400, 140, 25, DARKBLUE);
+        // Setting the amount of turns per game
+        if (settingTurnLimit) {
+            DrawText("Enter the number of turns for this round:", 100, 100, 20, DARKGRAY);
+            DrawText(turnLimitInput.c_str(), 400, 140, 25, DARKBLUE);
         }
-        else if (settingUp) {
-            DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
-        }
-        else if (!gameOver) {
-            DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
-
-            // Display remaining time for the current turn
-            int remainingTime = (int)(turnTimeLimit - (GetTime() - turnStartTime));
-            DrawText(("Time left: " + to_string(remainingTime) + "s").c_str(), 100, 180, 20, RED);
+        else if (settingTimeLimit) {
+            DrawText("Enter time limit per turn (seconds):", 100, 100, 20, DARKGRAY);
+            DrawText(timeLimitInput.c_str(), 400, 140, 25, DARKBLUE);
         }
         else {
-            DrawText("Game Over!", 100, 140, 20, DARKPURPLE);
-        }
+            DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
 
-        // Display player input and feedback message
-        if (settingUp) {
-            string maskedGuess(guess.length(), '*');
-            DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
-        }
-        else {
-            DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
-        }
+            if (settingUp) {
+                DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
+            }
+            else if (!gameOver) {
+                DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
+                DrawText(("Time left: " + to_string(remainingTime)).c_str(), 100, 200, 20, RED);  // Display remaining time
+            }
+            else {
+                DrawText("Game Over!", 100, 140, 20, DARKPURPLE);
+            }
 
-        DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+            // Display player input and feedback message
+            if (settingUp) {
+                string maskedGuess(guess.length(), '*');
+                DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
+            }
+            else {
+                DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
+            }
+
+            DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+        }
 
         // Instructions for resetting the game
         if (gameOver) {
@@ -190,14 +231,17 @@ int main() {
             player1Number.clear();
             player2Number.clear();
             guess.clear();
-            feedbackMessage = "Player 1, set your 4-digit number.";
+            feedbackMessage = "Enter the number of turns for this game.";
             player1Turn = true;
             settingUp = true;
+            settingTurnLimit = true;
+            settingTimeLimit = false;
             gameOver = false;
-            turn = 1;
-            timerSettingPhase = true; // Reset timer setting phase
-            turnTimeLimit = 0;
-            turnStartTime = 0;
+            player1Turns = 0;
+            player2Turns = 0;
+            turnLimitInput.clear();
+            timeLimitInput.clear();
+            remainingTime = 0;
         }
 
         EndDrawing();
