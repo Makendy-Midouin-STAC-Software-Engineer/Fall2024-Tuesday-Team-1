@@ -49,7 +49,6 @@ string isValidNumber(const string& number) {
     return "Valid";  // If all checks pass, return "Valid"
 }
 
-
 int main() {
     // Initialize Raylib window
     InitWindow(800, 600, "NumBrainer");
@@ -140,6 +139,8 @@ int main() {
                             settingUp = false;
                             player1Turn = true;
                             feedbackMessage = "Game starts! Player 1's turn to guess.";
+                            remainingTime = timeLimitPerTurn;  // Set initial turn time
+                            startTime = GetTime();             // Start timer only after setup
                         }
                         guess.clear();
                     }
@@ -148,29 +149,6 @@ int main() {
                         string target = player1Turn ? player2Number : player1Number;
                         correctDigits = countCorrectDigits(guess, target);
                         correctPositions = countCorrectPositions(guess, target);
-            if (IsKeyPressed(KEY_ENTER) && guess.length() == 4 && isValidNumber(guess)) {
-                if (settingUp) {
-                    // Set up phase for target numbers
-                    if (player1Turn) {
-                        player1Number = guess;
-                        player1Turn = false;
-                        feedbackMessage = "Player 2, set your 4-digit number.";
-                    }
-                    else {
-                        player2Number = guess;
-                        settingUp = false;
-                        player1Turn = true;
-                        feedbackMessage = "Game starts! Player 1's turn to guess.";
-                        remainingTime = timeLimitPerTurn;  // Set initial turn time
-                        startTime = GetTime();             // Start timer only after setup
-                    }
-                    guess.clear();
-                }
-                else {
-                    // Game loop for guessing phase
-                    string target = player1Turn ? player2Number : player1Number;
-                    correctDigits = countCorrectDigits(guess, target);
-                    correctPositions = countCorrectPositions(guess, target);
 
                         if (guess == target) {
                             feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + string(" wins!");
@@ -180,38 +158,26 @@ int main() {
                             feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
                             feedbackMessage += ": " + to_string(correctDigits) + " correct digits, " +
                                 to_string(correctPositions) + " in position.";
-                            player1Turn = !player1Turn;
-                            turn++;
-                        }
-                    if (guess == target) {
-                        feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + string(" wins!");
-                        gameOver = true;
-                    }
-                    else {
-                        feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
-                        feedbackMessage += ": " + to_string(correctDigits) + " correct digits, " +
-                            to_string(correctPositions) + " in position.";
 
-                        if (player1Turn) {
-                            player1Turns++;
-                        }
-                        else {
-                            player2Turns++;
-                        }
+                            if (player1Turn) {
+                                player1Turns++;
+                            }
+                            else {
+                                player2Turns++;
+                            }
 
-                        // Switch turns only if both players haven't exceeded their turn limits
-                        if (player1Turns < turnLimit || player2Turns < turnLimit) {
-                            player1Turn = !player1Turn;
-                            startTime = GetTime();  // Reset timer on turn switch
-                        }
+                            // Switch turns only if both players haven't exceeded their turn limits
+                            if (player1Turns < turnLimit || player2Turns < turnLimit) {
+                                player1Turn = !player1Turn;
+                                startTime = GetTime();  // Reset timer on turn switch
+                            }
 
-                        // Check if both players have reached the turn limit
-                        if (player1Turns >= turnLimit && player2Turns >= turnLimit) {
-                            feedbackMessage = "Turn limit reached! It's a draw.";
-                            gameOver = true;
+                            // Check if both players have reached the turn limit
+                            if (player1Turns >= turnLimit && player2Turns >= turnLimit) {
+                                feedbackMessage = "Turn limit reached! It's a draw.";
+                                gameOver = true;
+                            }
                         }
-                    }
-
 
                         // Add guess and feedback to history
                         feedbackHistory.push_back("Guess: " + guess + " - " + feedbackMessage);
@@ -219,8 +185,6 @@ int main() {
                     }
                 }
             }
-		}
-
 
             // Countdown timer for each turn
             if (!gameOver && !settingTurnLimit && !settingTimeLimit && !settingUp) {
@@ -274,14 +238,6 @@ int main() {
             else {
                 DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
             }
-        // Display player input and feedback message
-        if (settingUp) {
-            string maskedGuess(guess.length(), '*');
-            DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
-        }
-        else {
-            DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
-        }
 
             DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
         }
