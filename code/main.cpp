@@ -1,10 +1,7 @@
 #include "raylib.h"
 #include <string>
 #include <set>
-<<<<<<< HEAD
-=======
 #include <vector>
->>>>>>> d33cb30 (Latest version)
 #include <cstdlib>
 #include <ctime>
 
@@ -32,19 +29,6 @@ int countCorrectPositions(const string& guess, const string& target) {
     return correctPosCount;
 }
 
-<<<<<<< HEAD
-// Function to validate the number input (4 digits, no repeating digits)
-bool isValidNumber(const string& number) {
-    if (number.length() != 4) return false;
-    set<char> digits;
-    for (char ch : number) {
-        if (!isdigit(ch) || digits.find(ch) != digits.end()) {
-            return false;
-        }
-        digits.insert(ch);
-    }
-    return true;
-=======
 // Function to validate the number input (4 digits, no repeating digits) with detailed feedback
 string isValidNumber(const string& number) {
     if (number.length() != 4) {
@@ -63,7 +47,6 @@ string isValidNumber(const string& number) {
     }
 
     return "Valid";  // If all checks pass, return "Valid"
->>>>>>> d33cb30 (Latest version)
 }
 
 int main() {
@@ -75,99 +58,6 @@ int main() {
     string player1Number = "", player2Number = "";
     string guess = "";
     string feedbackMessage = "";
-<<<<<<< HEAD
-    int turn = 1;
-    int correctDigits = 0, correctPositions = 0;
-    //int maxTurns = 10;  // You can change this for different game lengths
-    bool gameOver = false;
-    bool player1Turn = true;
-    bool settingUp = true;
-
-    while (!WindowShouldClose()) {
-        // Capture input for 4-digit numbers or guesses
-        if (settingUp || !gameOver) {
-            int key = GetCharPressed();
-            if (key >= '0' && key <= '9' && guess.length() < 4) {
-                guess += (char)key;
-            }
-
-            if (IsKeyPressed(KEY_BACKSPACE) && !guess.empty()) {
-                guess.pop_back();
-            }
-
-            // After 4-digit entry, validate and store as either Player's target or guess
-            if (IsKeyPressed(KEY_ENTER) && guess.length() == 4 && isValidNumber(guess)) {
-                if (settingUp) {
-                    // Set up phase for target numbers
-                    if (player1Turn) {
-                        player1Number = guess;
-                        player1Turn = false;
-                        feedbackMessage = "Player 2, set your 4-digit number.";
-                    }
-                    else {
-                        player2Number = guess;
-                        settingUp = false;
-                        player1Turn = true;
-                        feedbackMessage = "Game starts! Player 1's turn to guess.";
-                    }
-                    guess.clear();
-                }
-                else {
-                    // Game loop for guessing phase
-                    string target = player1Turn ? player2Number : player1Number;
-                    correctDigits = countCorrectDigits(guess, target);
-                    correctPositions = countCorrectPositions(guess, target);
-
-                    if (guess == target) {
-                        feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + string(" wins!");
-                        gameOver = true;
-                    }
-                    else {
-                        feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
-                        feedbackMessage += ": " + to_string(correctDigits) + " correct digits, " +
-                            to_string(correctPositions) + " in position.";
-                        player1Turn = !player1Turn;
-                        turn++;
-                    }
-
-
-                    guess.clear();
-                }
-            }
-        }
-
-        // Drawing the UI
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-
-        // Title and instructions
-        DrawText("NumBrainer", 250, 50, 40, DARKBLUE);
-        DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
-
-        if (settingUp) {
-            DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
-        }
-        else if (!gameOver) {
-            DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
-        }
-        else {
-            DrawText("Game Over!", 100, 140, 20, DARKPURPLE);
-        }
-
-        // Display player input and feedback message
-        if (settingUp) {
-            string maskedGuess(guess.length(), '*');
-            DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
-        } else {
-            DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
-        }
-
-        DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
-
-        // Instructions for resetting the game
-        if (gameOver) {
-            DrawText("Press 'R' to reset the game.", 100, 400, 20, GRAY);
-=======
     string turnLimitInput = "";  // Input for number of turns
     string timeLimitInput = "";  // Input for time limit per turn
     int turnLimit = 0;           // Number of turns for the round
@@ -373,7 +263,6 @@ int main() {
         // Instructions for resetting the game
         if (gameOver) {
             DrawText("Press 'R' to reset the game.", 100, yOffset + 20, 20, GRAY);
->>>>>>> d33cb30 (Latest version)
         }
 
         // Reset game state
@@ -381,13 +270,6 @@ int main() {
             player1Number.clear();
             player2Number.clear();
             guess.clear();
-<<<<<<< HEAD
-            feedbackMessage = "Player 1, set your 4-digit number.";
-            player1Turn = true;
-            settingUp = true;
-            gameOver = false;
-            turn = 1;
-=======
             feedbackMessage = "Enter the number of turns for this game.";
             player1Turn = true;
             settingUp = true;
@@ -400,7 +282,6 @@ int main() {
             turnLimitInput.clear();
             timeLimitInput.clear();
             remainingTime = 0;
->>>>>>> d33cb30 (Latest version)
         }
 
         EndDrawing();
