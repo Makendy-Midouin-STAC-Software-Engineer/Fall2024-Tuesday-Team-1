@@ -78,8 +78,6 @@ int main() {
     // History vector to store feedback messages
     vector<string> feedbackHistory;
 
-    // History vector to store feedback messages
-    vector<string> feedbackHistory;
 
     while (!WindowShouldClose()) {
         // Capture input for turn limit or game setup
@@ -249,31 +247,8 @@ int main() {
         }
 
 
-        // Display player input and feedback message
-        if (settingUp) {
-            string maskedGuess(guess.length(), '*');
-            DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
-        }
-        else {
-            DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
-        }
-        // Display the feedback history
-        int yOffset = 350;
-        for (const string& feedback : feedbackHistory) {
-            Color feedbackColor = DARKGRAY;  // Default color
 
-            // Determine color based on player
-            if (feedback.find("Player 1") != string::npos) {
-                feedbackColor = DARKBLUE;  // Color for Player 1
-            }
-            else if (feedback.find("Player 2") != string::npos) {
-                feedbackColor = MAROON;    // Color for Player 2
-            }
 
-            // Draw the feedback with the selected color
-            DrawText(feedback.c_str(), 100, yOffset, 20, feedbackColor);
-            yOffset += 25;  // Adjust spacing between lines
-        }
 
         // Display the feedback history
         int yOffset = 350;
