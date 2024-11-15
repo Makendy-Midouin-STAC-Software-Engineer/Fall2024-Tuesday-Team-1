@@ -50,7 +50,6 @@ string isValidNumber(const string& number) {
 }
 
 // Display end-game statistics centered on screen with game result
-// Display end-game statistics centered on screen with game result
 void DrawGameStatistics(int player1Turns, int player2Turns, bool gameOver, const string& feedbackMessage, int turnLimit) {
     if (!gameOver) return;
 
