@@ -49,6 +49,50 @@ string isValidNumber(const string& number) {
     return "Valid";  // If all checks pass, return "Valid"
 }
 
+// Display end-game statistics centered on screen with game result
+// Display end-game statistics centered on screen with game result
+void DrawGameStatistics(int player1Turns, int player2Turns, bool gameOver, const string& feedbackMessage, int turnLimit) {
+    if (!gameOver) return;
+
+    int screenWidth = GetScreenWidth();
+    int centerX = screenWidth / 2;
+    int startY = 150;  // Start statistics lower to accommodate fixed title
+    int lineSpacing = 50;  // Space between lines
+
+    // Title stays in original position
+    DrawText("NumBrainer", 250, 50, 40, DARKBLUE);
+
+    // Game Statistics header
+    DrawText("Game Statistics", centerX - MeasureText("Game Statistics", 40)/2, startY, 40, DARKBLUE);
+
+    // Player 1 Turns
+    string p1Text = "Player 1 Turns: " + to_string(player1Turns) + "/" + to_string(turnLimit);
+    DrawText(p1Text.c_str(), centerX - MeasureText(p1Text.c_str(), 30)/2, startY + lineSpacing, 30, DARKBLUE);
+
+    // Player 2 Turns
+    string p2Text = "Player 2 Turns: " + to_string(player2Turns) + "/" + to_string(turnLimit);
+    DrawText(p2Text.c_str(), centerX - MeasureText(p2Text.c_str(), 30)/2, startY + lineSpacing*2, 30, MAROON);
+
+    // Result text
+    string resultText;
+    Color resultColor;
+    if (feedbackMessage.find("Player 1 wins") != string::npos) {
+        resultText = "Player 1 wins!";
+        resultColor = DARKBLUE;
+    } else if (feedbackMessage.find("Player 2 wins") != string::npos) {
+        resultText = "Player 2 wins!";
+        resultColor = MAROON;
+    } else {
+        resultText = "Draw Game";
+        resultColor = PURPLE;
+    }
+    DrawText(resultText.c_str(), centerX - MeasureText(resultText.c_str(), 30)/2, startY + lineSpacing*3, 30, resultColor);
+
+    // Reset instruction
+    string resetText = "Press 'R' to reset the game.";
+    DrawText(resetText.c_str(), centerX - MeasureText(resetText.c_str(), 20)/2, startY + lineSpacing*4, 20, GRAY);
+}
+
 int main() {
     // Initialize Raylib window
     InitWindow(800, 600, "NumBrainer");
@@ -204,66 +248,63 @@ int main() {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        // Title and instructions
-        DrawText("NumBrainer", 250, 50, 40, DARKBLUE);
+        if (!gameOver) {
+            // Title and instructions
+            DrawText("NumBrainer", 250, 50, 40, DARKBLUE);
 
-        // Setting the amount of turns per game
-        if (settingTurnLimit) {
-            DrawText("Enter the number of turns for this round:", 100, 100, 20, DARKGRAY);
-            DrawText(turnLimitInput.c_str(), 400, 140, 25, DARKBLUE);
-        }
-        else if (settingTimeLimit) {
-            DrawText("Enter time limit per turn (seconds):", 100, 100, 20, DARKGRAY);
-            DrawText(timeLimitInput.c_str(), 400, 140, 25, DARKBLUE);
-        }
-        else {
-            DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
-
-            if (settingUp) {
-                DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
+            // Setting the amount of turns per game
+            if (settingTurnLimit) {
+                DrawText("Enter the number of turns for this round:", 100, 100, 20, DARKGRAY);
+                DrawText(turnLimitInput.c_str(), 400, 140, 25, DARKBLUE);
             }
-            else if (!gameOver) {
-                DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
-                DrawText(("Time left: " + to_string(remainingTime)).c_str(), 100, 200, 20, RED);  // Display remaining time
+            else if (settingTimeLimit) {
+                DrawText("Enter time limit per turn (seconds):", 100, 100, 20, DARKGRAY);
+                DrawText(timeLimitInput.c_str(), 400, 140, 25, DARKBLUE);
             }
             else {
-                DrawText("Game Over!", 100, 140, 20, DARKPURPLE);
-            }
+                DrawText("Enter a 4-digit number with no repeating digits:", 100, 100, 20, DARKGRAY);
 
-            // Display player input and feedback message
-            if (settingUp) {
-                string maskedGuess(guess.length(), '*');
-                DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
-            }
-            else {
-                DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
-            }
+                if (settingUp) {
+                    DrawText((player1Turn ? "Player 1, set your number:" : "Player 2, set your number:"), 100, 140, 20, DARKGRAY);
+                }
+                else {
+                    DrawText((player1Turn ? "Player 1's turn to guess:" : "Player 2's turn to guess:"), 100, 140, 20, DARKGRAY);
+                    DrawText(("Time left: " + to_string(remainingTime)).c_str(), 100, 200, 20, RED);
+                }
 
-            DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+                // Display player input and feedback message
+                if (settingUp) {
+                    string maskedGuess(guess.length(), '*');
+                    DrawText(maskedGuess.c_str(), 400, 140, 25, DARKBLUE);
+                }
+                else {
+                    DrawText(guess.c_str(), 400, 140, 25, DARKBLUE);
+                }
+
+                DrawText(feedbackMessage.c_str(), 100, 300, 20, MAROON);
+
+                // Display the feedback history
+                int yOffset = 350;
+                for (const string& feedback : feedbackHistory) {
+                    Color feedbackColor = DARKGRAY;  // Default color
+
+                    if (feedback.find("Player 1") != string::npos) {
+                        feedbackColor = DARKBLUE;  // Color for Player 1
+                    }
+                    else if (feedback.find("Player 2") != string::npos) {
+                        feedbackColor = MAROON;    // Color for Player 2
+                    }
+
+                    DrawText(feedback.c_str(), 100, yOffset, 20, feedbackColor);
+                    yOffset += 25;  // Adjust spacing between lines
+                }
+            }
+        } else {
+            // Only show statistics when game is over
+            DrawGameStatistics(player1Turns, player2Turns, gameOver, feedbackMessage, turnLimit);
         }
 
-        // Display the feedback history
-        int yOffset = 350;
-        for (const string& feedback : feedbackHistory) {
-            Color feedbackColor = DARKGRAY;  // Default color
-
-            // Determine color based on player
-            if (feedback.find("Player 1") != string::npos) {
-                feedbackColor = DARKBLUE;  // Color for Player 1
-            }
-            else if (feedback.find("Player 2") != string::npos) {
-                feedbackColor = MAROON;    // Color for Player 2
-            }
-
-            // Draw the feedback with the selected color
-            DrawText(feedback.c_str(), 100, yOffset, 20, feedbackColor);
-            yOffset += 25;  // Adjust spacing between lines
-        }
-
-        // Instructions for resetting the game
-        if (gameOver) {
-            DrawText("Press 'R' to reset the game.", 100, yOffset + 20, 20, GRAY);
-        }
+        EndDrawing();
 
         // Reset game state
         if (IsKeyPressed(KEY_R) && gameOver) {
@@ -283,8 +324,6 @@ int main() {
             timeLimitInput.clear();
             remainingTime = 0;
         }
-
-        EndDrawing();
     }
 
     CloseWindow();
