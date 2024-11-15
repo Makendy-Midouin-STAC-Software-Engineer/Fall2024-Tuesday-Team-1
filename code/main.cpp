@@ -299,7 +299,7 @@ int main() {
                 }
             }
         } else {
-            // Only show statistics when game is over
+            // Show statistics when game is over
             DrawGameStatistics(player1Turns, player2Turns, gameOver, feedbackMessage, turnLimit);
         }
 
