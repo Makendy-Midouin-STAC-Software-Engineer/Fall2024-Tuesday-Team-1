@@ -19,12 +19,12 @@ private:
     void drawGameStatistics();
     void handleKeyPress(int key);
 
-    Game game;
-    std::string currentInput;
-    bool shouldClose;
+    Game game;               // Game logic instance
+    std::string currentInput; // Current user input
+    bool shouldClose;        // Flag to close the game
     static const int SCREEN_WIDTH = 800;
     static const int SCREEN_HEIGHT = 600;
-    static const char* WINDOW_TITLE;
+    static const char* WINDOW_TITLE; // Window title
 };
 
-#endif //GAMEUI_H
+#endif // GAMEUI_H
