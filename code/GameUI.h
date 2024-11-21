@@ -1,30 +1,36 @@
 #ifndef GAMEUI_H
 #define GAMEUI_H
 
-#include "raylib.h"
 #include "Game.h"
+#include "raylib.h"
 #include <string>
 
+// Handles all user interface aspects of the game including:
+// - Window management
+// - Input processing
+// - Rendering game state
+// - Visual feedback
 class GameUI {
 public:
     GameUI();
-    void initialize();
     void run();
-    void shutdown();
 
 private:
     void processInput();
     void render();
-    void drawGameScreen();
+    void drawGameSetup();
     void drawGameStatistics();
-    void handleKeyPress(int key);
 
-    Game game;               // Game logic instance
-    std::string currentInput; // Current user input
-    bool shouldClose;        // Flag to close the game
-    static const int SCREEN_WIDTH = 800;
-    static const int SCREEN_HEIGHT = 600;
-    static const char* WINDOW_TITLE; // Window title
+    // Game instance and UI state
+    Game game;
+    std::string currentInput;
+
+    // Window and display constants
+    static constexpr int WINDOW_WIDTH = 1000;
+    static constexpr int WINDOW_HEIGHT = 800;
+    static constexpr int TITLE_FONT_SIZE = 50;
+    static constexpr int NORMAL_FONT_SIZE = 20;
+    static constexpr int INPUT_FONT_SIZE = 25;
 };
 
 #endif // GAMEUI_H

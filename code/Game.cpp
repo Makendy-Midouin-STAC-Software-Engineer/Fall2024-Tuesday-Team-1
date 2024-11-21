@@ -1,96 +1,153 @@
 #include "Game.h"
-#include <cctype>
+#include <raylib.h>
+#include <algorithm>
 
-// Constructor initializes the game to default state
 Game::Game()
-    : turnLimit(0), player1Turns(0), player2Turns(0),
-      player1Turn(true), gameState(GameState::SettingTurnLimit) {
-}
+    : turnLimit(0)
+    , player1Turns(0)
+    , player2Turns(0)
+    , remainingTime(DEFAULT_TIME_LIMIT)
+    , startTime(0)
+    , gameOver(false)
+    , player1Turn(true)
+    , settingUp(true)
+    , settingTurnLimit(true)
+{}
 
-// Reset the game to its initial state
+// Resets all game state variables to their initial values
 void Game::reset() {
     player1Number.clear();
     player2Number.clear();
     feedbackMessage.clear();
     feedbackHistory.clear();
-    turnLimit = 0;
+    player1Turn = true;
+    settingUp = true;
+    settingTurnLimit = true;
+    gameOver = false;
     player1Turns = 0;
     player2Turns = 0;
-    player1Turn = true;
-    gameState = GameState::SettingTurnLimit;
+    turnLimit = 0;
+    remainingTime = DEFAULT_TIME_LIMIT;
+    startTime = 0;
 }
 
-// Set the turn limit for the game
-void Game::setTurnLimit(int limit) {
-    turnLimit = limit;
-    gameState = GameState::SettingPlayerNumbers;
-    feedbackMessage = "Player 1, set your 4-digit number.";
+// Tries to set the turn limit. Returns true if successful, false if invalid input
+void Game::setTurnLimit(const std::string& input) {
+    try {
+        int tempTurnLimit = std::stoi(input);
+        if (tempTurnLimit < 1) {
+            feedbackMessage = "Turn limit must be at least 1. Try again:";
+            return false;
+        }
+        turnLimit = tempTurnLimit;
+        settingTurnLimit = false;
+        feedbackMessage = "Player 1, set your 4-digit number.";
+        return true;
+    }
+    catch (...) {
+        feedbackMessage = "Invalid input. Please enter a number.";
+        return false;
+    }
 }
 
-// Validate if a number is valid (4 digits, unique, numeric)
-bool Game::isValidNumber(const std::string& number) const {
-    if (number.length() != 4) return false;
+// Checks if a number is valid (4 digits, no repeats)
+std::string Game::validateNumber(const std::string& number) {
+    if (number.length() != 4) {
+        return "Error: Number must be exactly 4 digits long.";
+    }
+
     std::set<char> digits;
     for (char ch : number) {
-        if (!isdigit(ch) || digits.count(ch)) return false;
+        if (!isdigit(ch)) {
+            return "Error: Only numeric digits (0-9) are allowed.";
+        }
+        if (digits.find(ch) != digits.end()) {
+            return "Error: Digits must not repeat.";
+        }
         digits.insert(ch);
     }
-    return true;
+
+    return "Valid";
 }
 
-// Set the number for the current player
-void Game::setPlayerNumber(const std::string& number) {
-    if (!isValidNumber(number)) {
-        feedbackMessage = "Invalid number. Ensure it has 4 unique digits.";
-        return;
+// Sets a player's number during setup phase
+bool Game::setPlayerNumber(const std::string& number) {
+    std::string validationMessage = validateNumber(number);
+    if (validationMessage != "Valid") {
+        feedbackMessage = validationMessage;
+        return false;
     }
 
     if (player1Turn) {
         player1Number = number;
         player1Turn = false;
         feedbackMessage = "Player 2, set your 4-digit number.";
-    } else {
+    }
+    else {
         player2Number = number;
-        gameState = GameState::Playing;
+        settingUp = false;
         player1Turn = true;
         feedbackMessage = "Game starts! Player 1's turn to guess.";
+        remainingTime = DEFAULT_TIME_LIMIT;
+        startTime = GetTime();
     }
+    return true;
 }
 
-// Make a guess and calculate feedback
-std::pair<int, int> Game::makeGuess(const std::string& guess) {
-    if (!isValidNumber(guess)) {
-        feedbackMessage = "Invalid guess. Ensure it has 4 unique digits.";
-        return {0, 0};
+// Processes a player's guess and updates game state accordingly
+bool Game::makeGuess(const std::string& guess) {
+    std::string validationMessage = validateNumber(guess);
+    if (validationMessage != "Valid") {
+        feedbackMessage = validationMessage;
+        return false;
     }
 
-    const std::string& target = player1Turn ? player2Number : player1Number;
+    // Check guess against target number
+    std::string target = player1Turn ? player2Number : player1Number;
     int correctDigits = countCorrectDigits(guess, target);
     int correctPositions = countCorrectPositions(guess, target);
 
-    // Record feedback
-    feedbackHistory.push_back({guess, correctDigits, correctPositions,
-        (player1Turn ? "Player 1" : "Player 2") + std::string(": ") +
-        std::to_string(correctDigits) + " correct digits, " +
-        std::to_string(correctPositions) + " in correct position."});
+    if (guess == target) {
+        // Winner!
+        feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + std::string(" wins!");
+        gameOver = true;
+    }
+    else {
+        // Provide feedback and switch turns
+        feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
+        feedbackMessage += ": " + std::to_string(correctDigits) + " correct digits, " +
+                          std::to_string(correctPositions) + " in position.";
 
-    checkGameOver(guess, target);
-    if (!isGameOver()) {
         if (player1Turn) player1Turns++;
         else player2Turns++;
 
+        // Check if we can continue or if it's a draw
+        if (player1Turns < turnLimit || player2Turns < turnLimit) {
+            switchTurns();
+        }
+
         if (player1Turns >= turnLimit && player2Turns >= turnLimit) {
             feedbackMessage = "Turn limit reached! It's a draw.";
-            gameState = GameState::GameOver;
-        } else {
-            switchTurns();
+            gameOver = true;
         }
     }
 
-    return {correctDigits, correctPositions};
+    addFeedback(guess, feedbackMessage);
+    return true;
 }
 
-// Count how many digits are correct
+// Updates the turn timer and handles time-outs
+void Game::updateTimer(double currentTime) {
+    if (!gameOver && !settingTurnLimit && !settingUp) {
+        remainingTime = DEFAULT_TIME_LIMIT - (currentTime - startTime);
+        if (remainingTime <= 0) {
+            feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + std::string(" ran out of time!");
+            switchTurns();
+        }
+    }
+}
+
+// Counts how many digits in the guess appear in the target number
 int Game::countCorrectDigits(const std::string& guess, const std::string& target) const {
     int correctCount = 0;
     for (char ch : guess) {
@@ -101,7 +158,7 @@ int Game::countCorrectDigits(const std::string& guess, const std::string& target
     return correctCount;
 }
 
-// Count how many digits are in the correct position
+// Counts how many digits are in the correct position
 int Game::countCorrectPositions(const std::string& guess, const std::string& target) const {
     int correctPosCount = 0;
     for (size_t i = 0; i < guess.length(); i++) {
@@ -112,26 +169,14 @@ int Game::countCorrectPositions(const std::string& guess, const std::string& tar
     return correctPosCount;
 }
 
-// Switch turns between players
+// Switches turns between players and resets the timer
 void Game::switchTurns() {
     player1Turn = !player1Turn;
-    feedbackMessage = (player1Turn ? "Player 1's turn to guess." : "Player 2's turn to guess.");
+    startTime = GetTime();
+    remainingTime = DEFAULT_TIME_LIMIT;
 }
 
-// Check if the game is over based on the guess
-void Game::checkGameOver(const std::string& guess, const std::string& target) {
-    if (guess == target) {
-        feedbackMessage = (player1Turn ? "Player 1 wins!" : "Player 2 wins!");
-        gameState = GameState::GameOver;
-    }
+// Adds a guess and its feedback to the history
+void Game::addFeedback(const std::string& guess, const std::string& message) {
+    feedbackHistory.push_back("Guess: " + guess + " - " + message);
 }
-
-// Getters for accessing game state and feedback
-bool Game::isGameOver() const { return gameState == GameState::GameOver; }
-GameState Game::getGameState() const { return gameState; }
-bool Game::isPlayer1Turn() const { return player1Turn; }
-int Game::getPlayer1Turns() const { return player1Turns; }
-int Game::getPlayer2Turns() const { return player2Turns; }
-int Game::getTurnLimit() const { return turnLimit; }
-const std::string& Game::getFeedbackMessage() const { return feedbackMessage; }
-const std::vector<Feedback>& Game::getFeedbackHistory() const { return feedbackHistory; }
