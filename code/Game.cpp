@@ -32,7 +32,7 @@ void Game::reset() {
 }
 
 // Tries to set the turn limit. Returns true if successful, false if invalid input
-void Game::setTurnLimit(const std::string& input) {
+bool Game::setTurnLimit(const std::string& input) {
     try {
         int tempTurnLimit = std::stoi(input);
         if (tempTurnLimit < 1) {
@@ -143,6 +143,7 @@ void Game::updateTimer(double currentTime) {
         if (remainingTime <= 0) {
             feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + std::string(" ran out of time!");
             switchTurns();
+            startTime = GetTime();
         }
     }
 }
