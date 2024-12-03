@@ -1,12 +1,18 @@
+/**
+ * @file Game.cpp
+ * @brief Implementation of the Game class for NumBrainer
+ */
+
 #include "Game.h"
 #include <raylib.h>
 #include <algorithm>
 
+// Constructor initializes all game state variables
 Game::Game()
     : turnLimit(0)
     , player1Turns(0)
     , player2Turns(0)
-    , remainingTime(DEFAULT_TIME_LIMIT)
+    , remainingTime(TIME_LIMIT)
     , startTime(0)
     , gameOver(false)
     , player1Turn(true)
@@ -14,24 +20,28 @@ Game::Game()
     , settingTurnLimit(true)
 {}
 
-// Resets all game state variables to their initial values
+// Reset all game state variables to their initial values
 void Game::reset() {
     player1Number.clear();
     player2Number.clear();
     feedbackMessage.clear();
     feedbackHistory.clear();
+    turnLimit = 0;
+    player1Turns = 0;
+    player2Turns = 0;
+    remainingTime = TIME_LIMIT;
+    startTime = 0;
+    gameOver = false;
     player1Turn = true;
     settingUp = true;
     settingTurnLimit = true;
-    gameOver = false;
-    player1Turns = 0;
-    player2Turns = 0;
-    turnLimit = 0;
-    remainingTime = DEFAULT_TIME_LIMIT;
-    startTime = 0;
 }
 
-// Tries to set the turn limit. Returns true if successful, false if invalid input
+/**
+ * Sets the turn limit for the game
+ * @param input String containing the desired turn limit
+ * @return true if successfully set, false if invalid input
+ */
 bool Game::setTurnLimit(const std::string& input) {
     try {
         int tempTurnLimit = std::stoi(input);
@@ -50,7 +60,11 @@ bool Game::setTurnLimit(const std::string& input) {
     }
 }
 
-// Checks if a number is valid (4 digits, no repeats)
+/**
+ * Validates a 4-digit number input
+ * @param number String to validate
+ * @return "Valid" if valid, error message if invalid
+ */
 std::string Game::validateNumber(const std::string& number) {
     if (number.length() != 4) {
         return "Error: Number must be exactly 4 digits long.";
@@ -66,11 +80,14 @@ std::string Game::validateNumber(const std::string& number) {
         }
         digits.insert(ch);
     }
-
     return "Valid";
 }
 
-// Sets a player's number during setup phase
+/**
+ * Sets a player's secret number during setup
+ * @param number The number to set
+ * @return true if successfully set, false if invalid
+ */
 bool Game::setPlayerNumber(const std::string& number) {
     std::string validationMessage = validateNumber(number);
     if (validationMessage != "Valid") {
@@ -82,19 +99,22 @@ bool Game::setPlayerNumber(const std::string& number) {
         player1Number = number;
         player1Turn = false;
         feedbackMessage = "Player 2, set your 4-digit number.";
-    }
-    else {
+    } else {
         player2Number = number;
         settingUp = false;
         player1Turn = true;
         feedbackMessage = "Game starts! Player 1's turn to guess.";
-        remainingTime = DEFAULT_TIME_LIMIT;
+        remainingTime = TIME_LIMIT;
         startTime = GetTime();
     }
     return true;
 }
 
-// Processes a player's guess and updates game state accordingly
+/**
+ * Processes a player's guess during gameplay
+ * @param guess The player's guess
+ * @return true if guess was processed, false if invalid
+ */
 bool Game::makeGuess(const std::string& guess) {
     std::string validationMessage = validateNumber(guess);
     if (validationMessage != "Valid") {
@@ -102,7 +122,6 @@ bool Game::makeGuess(const std::string& guess) {
         return false;
     }
 
-    // Check guess against target number
     std::string target = player1Turn ? player2Number : player1Number;
     int correctDigits = countCorrectDigits(guess, target);
     int correctPositions = countCorrectPositions(guess, target);
@@ -111,9 +130,8 @@ bool Game::makeGuess(const std::string& guess) {
         // Winner!
         feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + std::string(" wins!");
         gameOver = true;
-    }
-    else {
-        // Provide feedback and switch turns
+    } else {
+        // Process guess and provide feedback
         feedbackMessage = (player1Turn ? "Player 1" : "Player 2");
         feedbackMessage += ": " + std::to_string(correctDigits) + " correct digits, " +
                           std::to_string(correctPositions) + " in position.";
@@ -121,7 +139,6 @@ bool Game::makeGuess(const std::string& guess) {
         if (player1Turn) player1Turns++;
         else player2Turns++;
 
-        // Check if we can continue or if it's a draw
         if (player1Turns < turnLimit || player2Turns < turnLimit) {
             switchTurns();
         }
@@ -136,48 +153,54 @@ bool Game::makeGuess(const std::string& guess) {
     return true;
 }
 
-// Updates the turn timer and handles time-outs
+/**
+ * Updates the turn timer and handles timeouts
+ * @param currentTime Current game time
+ */
 void Game::updateTimer(double currentTime) {
     if (!gameOver && !settingTurnLimit && !settingUp) {
-        remainingTime = DEFAULT_TIME_LIMIT - (currentTime - startTime);
+        remainingTime = TIME_LIMIT - (currentTime - startTime);
         if (remainingTime <= 0) {
             feedbackMessage = (player1Turn ? "Player 1" : "Player 2") + std::string(" ran out of time!");
+            if (player1Turn) player1Turns++;
+            else player2Turns++;
             switchTurns();
-            startTime = GetTime();
         }
     }
 }
 
-// Counts how many digits in the guess appear in the target number
+/**
+ * Counts how many digits in the guess appear in the target number
+ * @return Number of matching digits regardless of position
+ */
 int Game::countCorrectDigits(const std::string& guess, const std::string& target) const {
     int correctCount = 0;
     for (char ch : guess) {
-        if (target.find(ch) != std::string::npos) {
-            correctCount++;
-        }
+        if (target.find(ch) != std::string::npos) correctCount++;
     }
     return correctCount;
 }
 
-// Counts how many digits are in the correct position
+/**
+ * Counts how many digits are in the correct position
+ * @return Number of digits in correct position
+ */
 int Game::countCorrectPositions(const std::string& guess, const std::string& target) const {
     int correctPosCount = 0;
     for (size_t i = 0; i < guess.length(); i++) {
-        if (guess[i] == target[i]) {
-            correctPosCount++;
-        }
+        if (guess[i] == target[i]) correctPosCount++;
     }
     return correctPosCount;
 }
 
-// Switches turns between players and resets the timer
+// Switch active player and reset timer
 void Game::switchTurns() {
     player1Turn = !player1Turn;
     startTime = GetTime();
-    remainingTime = DEFAULT_TIME_LIMIT;
+    remainingTime = TIME_LIMIT;
 }
 
-// Adds a guess and its feedback to the history
+// Add guess and feedback to history
 void Game::addFeedback(const std::string& guess, const std::string& message) {
     feedbackHistory.push_back("Guess: " + guess + " - " + message);
 }
